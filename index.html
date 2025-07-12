@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rakshu's Heart Crown Photobooth</title>
+  <style>
+    body {
+      background: #fff0f5;
+      font-family: 'Segoe UI', sans-serif;
+      text-align: center;
+      padding: 20px;
+      color: #c71585;
+    }
+
+    .container {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(199, 21, 133, 0.6);
+      background: black;
+    }
+
+    video {
+      width: 640px;
+      height: 480px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    #hearts-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 640px;
+      height: 480px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .heart {
+      position: absolute;
+      font-size: 24px;
+      opacity: 0.9;
+      animation: float 2.5s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%   { transform: translateY(0); opacity: 0.9; }
+      50%  { transform: translateY(-10px); opacity: 1; }
+      100% { transform: translateY(0); opacity: 0.9; }
+    }
+
+    .filters {
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .filters button,
+    .capture,
+    #generate-layout,
+    #download-layout {
+      padding: 10px 15px;
+      border: none;
+      background: #ff69b4;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      user-select: none;
+    }
+
+    .filters button:hover,
+    .capture:hover,
+    #generate-layout:hover,
+    #download-layout:hover {
+      background: #e5539d;
+    }
+
+    #photos {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .photo {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(199, 21, 133, 0.6);
+      border-radius: 8px;
+      background: white;
+      padding: 8px;
+    }
+
+    .photo-checkbox {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 24px;
+      height: 24px;
+      background: rgba(255, 192, 203, 0.85);
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 5;
+    }
+
+    .photo-checkbox input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .photo img {
+      width: 160px;
+      height: 120px;
+      border-radius: 8px;
+      object-fit: cover;
+      user-select: none;
+    }
+
+    .photo button {
+      margin-top: 5px;
+      padding: 6px 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #layout-settings {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      font-size: 1rem;
+      color: #c71585;
+    }
+
+    #layout-settings label {
+      font-weight: 600;
+    }
+
+    #layout-canvas {
+      margin-top: 30px;
+      border: 3px solid #c71585;
+      border-radius: 12px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      max-width: 100%;
+    }
+
+    /* Compliment popup */
+    #compliment-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ffc0cbcc;
+      padding: 20px 30px;
+      border-radius: 12px;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #c71585;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+      user-select: none;
+      box-shadow: 0 0 15px #c71585cc;
+      z-index: 1000;
+    }
+
+    #compliment-popup.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  </style>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+</head>
+<body>
+  <h1>💖 Rakshu's Photobooth 💖</h1>
+
+  <div class="container">
+    <video id="video" autoplay muted playsinline></video>
+    <div id="hearts-container"></div>
+  </div>
+
+  <div class="filters">
+    <button onclick="setEffect('none')">🎥 Normal</button>
+    <button onclick="setEffect('hearts')">💘 Hearts</button>
+    <button onclick="setEffect('bw')">💜 B&W</button>
+    <button onclick="setEffect('sepia')">🌸 Sepia</button>
+  </div>
+
+  <button class="capture" onclick="capture()">📸 Capture</button>
+  <audio id="click-sound" src="click.mp3" preload="auto"></audio>
+
+  <div id="photos"></div>
+
+  <div id="layout-settings">
+    <label for="layout-type">Choose Layout:</label>
+    <select id="layout-type">
+      <option value="grid">Grid</option>
+      <option value="vertical">Vertical Strip</option>
+      <option value="horizontal">Horizontal Strip</option>
+      <option value="heart">Heart Shape</option>
+    </select>
+
+    <label for="photo-count">Photos in layout:</label>
+    <input type="number" id="photo-count" min="1" max="9" value="4" style="width: 50px;"/>
+
+    <button id="preview-layout">Preview Layout</button>
+    <button id="download-layout" disabled>Download Layout</button>
+  </div>
+
+  <canvas id="layout-canvas" width="640" height="480" style="display:none;"></canvas>
+
+  <div id="compliment-popup"></div>
+
+  <script>
+    const video = document.getElementById("video");
+    const heartsContainer = document.getElementById("hearts-container");
+    const clickSound = document.getElementById("click-sound");
+    const photos = document.getElementById("photos");
+    const layoutTypeSelect = document.getElementById("layout-type");
+    const photoCountInput = document.getElementById("photo-count");
+    const previewLayoutBtn = document.getElementById("preview-layout");
+    const downloadLayoutBtn = document.getElementById("download-layout");
+    const layoutCanvas = document.getElementById("layout-canvas");
+    const layoutCtx = layoutCanvas.getContext("2d");
+    const complimentPopup = document.getElementById("compliment-popup");
+
+    let currentEffect = "none";
+
+    const compliments = [
+      "Your smile is pure magic! 💖",
+      "Radiant and kissable, just like you! 😘",
+      "A beauty that lights up the world! ✨",
+      "Absolutely breathtaking, 💫",
+      "Your charm is irresistible! 💕",
+      "Every shot is a love story! 💘",
+      "Simply stunning, inside and out! 💜"
+    ];
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (e) {
+        alert("Oops! Cannot access your camera. Please check permissions.");
+        console.error(e);
+      }
+    }
+
+    async function loadModels() {
+      await faceapi.nets.tinyFaceDetector.loadFromUri("https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/");
+    }
+
+    async function detectFaceAndPlaceHearts() {
+      if (currentEffect !== "hearts") return;
+      const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+      heartsContainer.innerHTML = "";
+
+      if (detection) {
+        const { x, y, width } = detection.box;
+        const centerX = x + width / 2;
+        const baseY = y - 60;
+
+        const heartCount = 7;
+        const radius = 80;
+
+        for (let i = 0; i < heartCount; i++) {
+          const angle = Math.PI * (i / (heartCount - 1)); // 0 to PI
+          const heartX = centerX + radius * Math.cos(angle);
+          const heartY = baseY - radius * Math.sin(angle) * 0.5; // curve downward
+
+          const heart = document.createElement("div");
+          heart.className = "heart";
+          heart.textContent = "💗";
+          heart.style.left = `${heartX}px`;
+          heart.style.top = `${heartY}px`;
+          heartsContainer.appendChild(heart);
+        }
+      }
+
+      requestAnimationFrame(detectFaceAndPlaceHearts);
+    }
+
+    function setEffect(effect) {
+      currentEffect = effect;
+      video.style.filter = "none";
+      heartsContainer.innerHTML = "";
+
+      if (effect === "bw") video.style.filter = "grayscale(100%)";
+      else if (effect === "sepia") video.style.filter = "sepia(100%)";
+      else if (effect === "hearts") detectFaceAndPlaceHearts();
+    }
+
+    function showCompliment() {
+      const compliment = compliments[Math.floor(Math.random() * compliments.length)];
+      complimentPopup.textContent = compliment;
+      complimentPopup.classList.add("show");
+      setTimeout(() => {
+        complimentPopup.classList.remove("show");
+      }, 3000);
+    }
+
+    async function capture() {
+      clickSound.currentTime = 0;
+      clickSound.play();
+
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+
+      ctx.filter = video.style.filter || "none";
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      if (currentEffect === "hearts") {
+        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+        if (detection) {
+          const { x, y, width } = detection.box;
+          const centerX = x + width / 2;
+          const baseY = y - 60;
+
+          ctx.font = "28px serif";
+          ctx.textAlign = "center";
+
+          const heartCount = 7;
+          const radius = 80;
+
+          for (let i = 0; i < heartCount; i++) {
+            const angle = Math.PI * (i / (heartCount - 1));
+            const heartX = centerX + radius * Math.cos(angle);
+            const heartY = baseY - radius * Math.sin(angle) * 0.5;
+            ctx.fillText("💗", heartX, heartY);
+          }
+        }
+      }
+
+      const imgURL = canvas.toDataURL("image/png");
+
+      const photoDiv = document.createElement("div");
+      photoDiv.classList.add("photo");
+
+      // Checkbox container
+      const checkboxContainer = document.createElement("label");
+      checkboxContainer.className = "photo-checkbox";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = true; // selected by default
+
+      checkboxContainer.appendChild(checkbox);
+      photoDiv.appendChild(checkboxContainer);
+
+      const img = document.createElement("img");
+      img.src = imgURL;
+
+      const downloadBtn = document.createElement("button");
+      downloadBtn.textContent = "Download";
+      downloadBtn.onclick = () => {
+        const a = document.createElement("a");
+        a.href = imgURL;
+        a.download = `PhotoWithLove.png`;
+        a.click();
+      };
+
+      photoDiv.appendChild(img);
+      photoDiv.appendChild(downloadBtn);
+      photos.appendChild(photoDiv);
+
+      showCompliment();
+      downloadLayoutBtn.disabled = true; // Disable download until new preview generated
+    }
+
+    // Layout drawing functions
+
+    function drawGridLayout(images, ctx, width, height) {
+      const count = images.length;
+      const gridSize = Math.ceil(Math.sqrt(count));
+      const cellW = width / gridSize;
+      const cellH = height / gridSize;
+
+      images.forEach((img, idx) => {
+        const row = Math.floor(idx / gridSize);
+        const col = idx % gridSize;
+        ctx.drawImage(img, col * cellW, row * cellH, cellW, cellH);
+      });
+    }
+
+    function drawVerticalLayout(images, ctx, width, height) {
+      const count = images.length;
+      const cellH = height / count;
+      const cellW = width;
+
+      images.forEach((img, idx) => {
+        ctx.drawImage(img, 0, idx * cellH, cellW, cellH);
+      });
+    }
+
+    function drawHorizontalLayout(images, ctx, width, height) {
+      const count = images.length;
+      const cellW = width / count;
+      const cellH = height;
+
+      images.forEach((img, idx) => {
+        ctx.drawImage(img, idx * cellW, 0, cellW, cellH);
+      });
+    }
+
+    function drawHeartLayout(images, ctx, width, height) {
+      // Heart shape parametric points (scaled)
+      // We place images centered on these points
+      const points = [
+        [0, -1], [0.5, -0.8], [1, -0.4], [1.2, 0], [1, 0.4], [0.5, 0.8], [0, 1], [-0.5, 0.8], [-1, 0.4], [-1.2, 0], [-1, -0.4], [-0.5, -0.8]
+      ];
+
+      const centerX = width / 2;
+      const centerY = height / 2 + 40;
+      const scale = Math.min(width, height) / 3;
+
+      const count = images.length;
+      const step = Math.floor(points.length / count);
+      const cellSize = scale / 2;
+
+      images.forEach((img, idx) => {
+        const p = points[(idx * step) % points.length];
+        const x = centerX + p[0] * scale - cellSize / 2;
+        const y = centerY + p[1] * scale - cellSize / 2;
+        ctx.drawImage(img, x, y, cellSize, cellSize);
+      });
+    }
+
+    function generateLayout() {
+      const allPhotos = photos.querySelectorAll('div.photo');
+      const selectedPhotos = [];
+
+      allPhotos.forEach(photoDiv => {
+        const checkbox = photoDiv.querySelector('input[type="checkbox"]');
+        const img = photoDiv.querySelector('img');
+        if (checkbox && checkbox.checked && img) {
+          selectedPhotos.push(img);
+        }
+      });
+
+      if (selectedPhotos.length === 0) {
+        alert("Please select at least one photo to create layout!");
+        layoutCanvas.style.display = "none";
+        downloadLayoutBtn.disabled = true;
+        return;
+      }
+
+      let count = parseInt(photoCountInput.value, 10);
+      if (count > selectedPhotos.length) count = selectedPhotos.length;
+      if (count < 1) count = 1;
+
+      const photosToUse = selectedPhotos.slice(0, count);
+
+      layoutCanvas.style.display = "block";
+      layoutCtx.clearRect(0, 0, layoutCanvas.width, layoutCanvas.height);
+
+      const layout = layoutTypeSelect.value;
+
+      switch(layout) {
+        case "grid":
+          drawGridLayout(photosToUse, layoutCtx, layoutCanvas.width, layoutCanvas.height);
+          break;
+        case "vertical":
+          drawVerticalLayout(photosToUse, layoutCtx, layoutCanvas.width, layoutCanvas.height);
+          break;
+        case "horizontal":
+          drawHorizontalLayout(photosToUse, layoutCtx, layoutCanvas.width, layoutCanvas.height);
+          break;
+        case "heart":
+          drawHeartLayout(photosToUse, layoutCtx, layoutCanvas.width, layoutCanvas.height);
+          break;
+        default:
+          drawGridLayout(photosToUse, layoutCtx, layoutCanvas.width, layoutCanvas.height);
+      }
+
+      downloadLayoutBtn.disabled = false;
+    }
+
+    function downloadLayout() {
+      const layoutURL = layoutCanvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = layoutURL;
+      a.download = "rakshu-layout-photo.png";
+      a.click();
+    }
+
+    startCamera()
+      .then(loadModels)
+      .then(() => {
+        console.log("Camera and face-api models loaded and ready!");
+      });
+
+    previewLayoutBtn.addEventListener("click", generateLayout);
+    downloadLayoutBtn.addEventListener("click", downloadLayout);
+
+    setEffect("none");
+    let timerEnabled = false;
+
+document.getElementById("timer-toggle").addEventListener("change", function() {
+  timerEnabled = this.checked;
+});
+
+document.getElementById("capture-btn").addEventListener("click", function() {
+  if (timerEnabled) {
+    startCountdown(3);
+  } else {
+    capturePhoto();
+  }
+});
+
+function startCountdown(seconds) {
+  let timerDisplay = document.getElementById("timer-display");
+  timerDisplay.textContent = seconds;
+  timerDisplay.classList.add("show");
+  let countdown = setInterval(() => {
+    seconds--;
+    if (seconds > 0) {
+      timerDisplay.textContent = seconds;
+    } else {
+      clearInterval(countdown);
+      timerDisplay.classList.remove("show");
+      capturePhoto();
+    }
+  }, 1000);
+}
+
+function capturePhoto() {
+  alert("Photo captured"); // Replaced console.log with alert for clearer feedback
+  let timerDisplay = document.getElementById("timer-display");
+  timerDisplay.textContent = "";
+}
+  </script>
+</body>
+</html>
