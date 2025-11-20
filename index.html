@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Rakshu's Heart Crown Photobooth</title>
+  <title>Snapbooth</title>
   <style>
     body {
       background: #fff0f5;
@@ -196,7 +196,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
 </head>
 <body>
-  <h1>💖 Rakshu's Photobooth 💖</h1>
+  <h1>✨Snapbooth✨</h1>
 
   <div class="container">
     <video id="video" autoplay muted playsinline></video>
@@ -204,10 +204,10 @@
   </div>
 
   <div class="filters">
-    <button onclick="setEffect('none')">🎥 Normal</button>
-    <button onclick="setEffect('hearts')">💘 Hearts</button>
-    <button onclick="setEffect('bw')">💜 B&W</button>
-    <button onclick="setEffect('sepia')">🌸 Sepia</button>
+    <button onclick="setEffect('none')">Normal</button>
+    <button onclick="setEffect('hearts')">💗Hearts</button>
+    <button onclick="setEffect('bw')">🖤🤍B&W</button>
+    <button onclick="setEffect('sepia')">🌸Sepia</button>
   </div>
 
   <button class="capture" onclick="capture()">📸 Capture</button>
@@ -519,41 +519,6 @@
     downloadLayoutBtn.addEventListener("click", downloadLayout);
 
     setEffect("none");
-    let timerEnabled = false;
-
-document.getElementById("timer-toggle").addEventListener("change", function() {
-  timerEnabled = this.checked;
-});
-
-document.getElementById("capture-btn").addEventListener("click", function() {
-  if (timerEnabled) {
-    startCountdown(3);
-  } else {
-    capturePhoto();
-  }
-});
-
-function startCountdown(seconds) {
-  let timerDisplay = document.getElementById("timer-display");
-  timerDisplay.textContent = seconds;
-  timerDisplay.classList.add("show");
-  let countdown = setInterval(() => {
-    seconds--;
-    if (seconds > 0) {
-      timerDisplay.textContent = seconds;
-    } else {
-      clearInterval(countdown);
-      timerDisplay.classList.remove("show");
-      capturePhoto();
-    }
-  }, 1000);
-}
-
-function capturePhoto() {
-  alert("Photo captured"); // Replaced console.log with alert for clearer feedback
-  let timerDisplay = document.getElementById("timer-display");
-  timerDisplay.textContent = "";
-}
   </script>
 </body>
 </html>
