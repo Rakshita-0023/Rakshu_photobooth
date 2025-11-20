@@ -191,9 +191,41 @@
       opacity: 1;
       pointer-events: auto;
     }
+
+    /* Animation overlay */
+    #animation-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    #animation-container {
+      width: 200px;
+      height: 200px;
+    }
+
+    #processing-text {
+      position: absolute;
+      bottom: 30%;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ff69b4;
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+    }
   </style>
 
   <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 </head>
 <body>
   <h1>✨Snapbooth✨</h1>
@@ -235,6 +267,11 @@
 
   <div id="compliment-popup"></div>
 
+  <div id="animation-overlay">
+    <div id="animation-container"></div>
+    <div id="processing-text">Processing...</div>
+  </div>
+
   <script>
     const video = document.getElementById("video");
     const heartsContainer = document.getElementById("hearts-container");
@@ -247,8 +284,12 @@
     const layoutCanvas = document.getElementById("layout-canvas");
     const layoutCtx = layoutCanvas.getContext("2d");
     const complimentPopup = document.getElementById("compliment-popup");
+    const animationOverlay = document.getElementById("animation-overlay");
+    const animationContainer = document.getElementById("animation-container");
+    const processingText = document.getElementById("processing-text");
 
     let currentEffect = "none";
+    let lottieAnimation = null;
 
     const compliments = [
       "Your smile is pure magic! 💖",
@@ -323,9 +364,39 @@
       }, 3000);
     }
 
+    function showAnimation(text = "Processing...") {
+      processingText.textContent = text;
+      animationOverlay.style.display = "flex";
+      
+      if (lottieAnimation) {
+        lottieAnimation.destroy();
+      }
+      
+      lottieAnimation = lottie.loadAnimation({
+        container: animationContainer,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: './Take Photo.json'
+      });
+    }
+
+    function hideAnimation() {
+      animationOverlay.style.display = "none";
+      if (lottieAnimation) {
+        lottieAnimation.destroy();
+        lottieAnimation = null;
+      }
+    }
+
     async function capture() {
+      // Show animation and play sound simultaneously
+      showAnimation("Capturing...");
       clickSound.currentTime = 0;
       clickSound.play();
+
+      // Small delay to sync with animation
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth;
@@ -389,7 +460,12 @@
       photoDiv.appendChild(downloadBtn);
       photos.appendChild(photoDiv);
 
-      showCompliment();
+      // Hide animation after processing
+      setTimeout(() => {
+        hideAnimation();
+        showCompliment();
+      }, 1000);
+      
       downloadLayoutBtn.disabled = true; // Disable download until new preview generated
     }
 
@@ -452,6 +528,11 @@
     }
 
     function generateLayout() {
+      // Show animation for layout generation
+      showAnimation("Creating Layout...");
+      clickSound.currentTime = 0;
+      clickSound.play();
+      
       const allPhotos = photos.querySelectorAll('div.photo');
       const selectedPhotos = [];
 
@@ -464,6 +545,7 @@
       });
 
       if (selectedPhotos.length === 0) {
+        hideAnimation();
         alert("Please select at least one photo to create layout!");
         layoutCanvas.style.display = "none";
         downloadLayoutBtn.disabled = true;
@@ -499,13 +581,18 @@
       }
 
       downloadLayoutBtn.disabled = false;
+      
+      // Hide animation after layout is complete
+      setTimeout(() => {
+        hideAnimation();
+      }, 1500);
     }
 
     function downloadLayout() {
       const layoutURL = layoutCanvas.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = layoutURL;
-      a.download = "rakshu-layout-photo.png";
+      a.download = "SnapBooth-photo.png";
       a.click();
     }
 
